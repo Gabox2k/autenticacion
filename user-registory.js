@@ -51,7 +51,7 @@ export class UserRegistory {
         if (!user) throw new Error ('usuario no existe')
         
         const valido = await bcrypt.compare(password, user.password)
-        if(!valido) throw new Error ('La contraseña es valida')
+        if(!valido) throw new Error ('La contraseña es invalida')
         
         return user
 

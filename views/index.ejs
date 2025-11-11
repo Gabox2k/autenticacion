@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Autenticación</title>
+</head>
+<body>
+  <h1>Autenticación de Usuarios</h1>
+  
+  <h2>Registro</h2>
+  <form id="form-registro">
+    <input type="text" name="username" placeholder="Usuario" required>
+    <input type="password" name="password" placeholder="Contraseña" required>
+    <button type="submit">Registrarse</button>
+  </form>
+
+  <h2>Login</h2>
+  <form id="form-login">
+    <input type="text" name="username" placeholder="Usuario" required>
+    <input type="password" name="password" placeholder="Contraseña" required>
+    <button type="submit">Iniciar sesión</button>
+  </form>
+
+  <pre id="resultado"></pre>
+
+  <script>
+    const resultado = document.getElementById('resultado')
+
+    // Registro
+    document.getElementById('form-registro').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const data = Object.fromEntries(new FormData(e.target))
+      const res = await fetch('/registro', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      })
+      const json = await res.json()
+      resultado.textContent = JSON.stringify(json, null, 2)
+    })
+
+    // Login
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+      e.preventDefault()
+      const data = Object.fromEntries(new FormData(e.target))
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      })
+      const json = await res.json()
+      resultado.textContent = JSON.stringify(json, null, 2)
+    })
+  </script>
+</body>
+</html>

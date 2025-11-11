@@ -1,13 +1,17 @@
 import express, { response } from 'express'
+import jwt from 'jsonwebtoken'
+import {PORT} from './config.js'
 import {  UserRegistory } from './user-registory.js'
 
+
 const app = express()
+
+app.set('view engine' , 'ejs')
 app.use(express.json())
 
-const port = process.env.port || 3000
 
 app.get('/', (req,res) => {
-    res.send('hola mundo')
+    res.render('index')
 })
 
 app.post('/login', async (req, res) => {
@@ -27,7 +31,11 @@ app.post('/registro', async (req, res) =>{
 
     try{
         const id = await UserRegistory.create({username, password})
-        res.send({id})
+        const token = jwt.sign({id: user._id, username: user.username}, secret_jwt_key, 
+        {
+            expiresIn: '1h'
+        })
+        res.send({id , token})
     } catch (error) {
         res.status(400).send(error.message)
     }
