@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Autenticación</title>
+  <title>Autenticación con JWT</title>
 </head>
 <body>
-  <h1>Autenticación de Usuarios</h1>
-  
+  <h1>Autenticación con JSON Web Token (JWT)</h1>
+
   <h2>Registro</h2>
   <form id="form-registro">
     <input type="text" name="username" placeholder="Usuario" required>
@@ -26,7 +26,7 @@
   <script>
     const resultado = document.getElementById('resultado')
 
-    // Registro
+    // ---- REGISTRO ----
     document.getElementById('form-registro').addEventListener('submit', async (e) => {
       e.preventDefault()
       const data = Object.fromEntries(new FormData(e.target))
@@ -36,10 +36,10 @@
         body: JSON.stringify(data)
       })
       const json = await res.json()
-      resultado.textContent = JSON.stringify(json, null, 2)
+      resultado.textContent = 'Registro:\n' + JSON.stringify(json, null, 2)
     })
 
-    // Login
+    // ---- LOGIN ----
     document.getElementById('form-login').addEventListener('submit', async (e) => {
       e.preventDefault()
       const data = Object.fromEntries(new FormData(e.target))
@@ -48,8 +48,14 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
       })
-      const json = await res.json()
-      resultado.textContent = JSON.stringify(json, null, 2)
+
+      if (res.ok) {
+        // si el login es exitoso, redirige automáticamente
+        window.location.href = '/protegido'
+      } else {
+        const text = await res.text()
+        resultado.textContent = 'Error de login:\n' + text
+      }
     })
   </script>
 </body>

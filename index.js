@@ -1,17 +1,28 @@
 import express, { response } from 'express'
 import jwt from 'jsonwebtoken'
-import {PORT} from './config.js'
+import cookieParser from 'cookie-parser'
+import {PORT, secret_jwt_key} from './config.js'
 import {  UserRegistory } from './user-registory.js'
 
 
 const app = express()
 
 app.set('view engine' , 'ejs')
+
 app.use(express.json())
+app.use(cookieParser())
 
 
 app.get('/', (req,res) => {
-    res.render('index')
+    const token = req.cookies.acceso_token
+
+     try {
+        const data = jwt.verify(token, secret_jwt_key) 
+        res.render('index', data)
+    } catch (error) {
+        res.render('index')
+        
+    }
 })
 
 app.post('/login', async (req, res) => {
@@ -31,18 +42,38 @@ app.post('/registro', async (req, res) =>{
 
     try{
         const id = await UserRegistory.create({username, password})
-        const token = jwt.sign({id: user._id, username: user.username}, secret_jwt_key, 
+        const token = jwt.sign({id, username}, secret_jwt_key, 
         {
             expiresIn: '1h'
         })
-        res.send({id , token})
+        res
+        .cookie('acceso_token', token, {
+            httpOnly: true // solo accede en el servidor 
+        })
+        .send({id , token})
     } catch (error) {
         res.status(400).send(error.message)
     }
 
 })
 
+app.get('/protegido', (req, res) => {
+    const token = req.cookies.acceso_token
+    if (!token){
+        return res.status(403).send('No esta autorizado')
+    }
 
-app.listen(port,() => {
+    try {
+        const data = jwt.verify(token, secret_jwt_key) 
+        res.render('protegido', data)
+    } catch (error) {
+        res.status(401).send('No esta autorizado')
+        
+    }
+   
+})
+
+
+app.listen(PORT,() => {
     console.log('Servidor escuchando en el puerto ${port}' )
 } )
