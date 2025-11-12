@@ -5,58 +5,103 @@
   <title>Autenticación con JWT</title>
 </head>
 <body>
-  <h1>Autenticación con JSON Web Token (JWT)</h1>
+  <% if (!username) { %>
+    <h1>Autenticación con JSON Web Token (JWT)</h1>
 
-  <h2>Registro</h2>
-  <form id="form-registro">
-    <input type="text" name="username" placeholder="Usuario" required>
-    <input type="password" name="password" placeholder="Contraseña" required>
-    <button type="submit">Registrarse</button>
-  </form>
+    <h2>Registro</h2>
+    <form id="form-registro">
+      <input type="text" name="username" placeholder="Usuario" required>
+      <input type="password" name="password" placeholder="Contraseña" required>
+      <button type="submit">Registrarse</button>
+    </form>
 
-  <h2>Login</h2>
-  <form id="form-login">
-    <input type="text" name="username" placeholder="Usuario" required>
-    <input type="password" name="password" placeholder="Contraseña" required>
-    <button type="submit">Iniciar sesión</button>
-  </form>
+    <h2>Login</h2>
+    <form id="form-login">
+      <input type="text" name="username" placeholder="Usuario" required>
+      <input type="password" name="password" placeholder="Contraseña" required>
+      <button type="submit">Iniciar sesión</button>
+    </form>
+  <% } else { %>
+    <h1>Bienvenido, <%= username %> 👋</h1>
+    <button id="btn-protegido">Ir a zona protegida</button>
+    <button id="btn-cerrar">Cerrar sesión</button>
+  <% } %>
 
   <pre id="resultado"></pre>
 
   <script>
-    const resultado = document.getElementById('resultado')
+    const resultado = document.getElementById('resultado');
 
     // ---- REGISTRO ----
-    document.getElementById('form-registro').addEventListener('submit', async (e) => {
-      e.preventDefault()
-      const data = Object.fromEntries(new FormData(e.target))
-      const res = await fetch('/registro', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-      })
-      const json = await res.json()
-      resultado.textContent = 'Registro:\n' + JSON.stringify(json, null, 2)
-    })
+    const formRegistro = document.getElementById('form-registro');
+    if (formRegistro) {
+      formRegistro.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target));
+        const res = await fetch('/registro', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'same-origin', // importante para aceptar cookie
+          body: JSON.stringify(data)
+        });
+        const json = await res.json();
+        if (res.ok) {
+          // cookie ya fue seteada por el servidor; redirigimos
+          window.location.href = '/protegido';
+        } else {
+          resultado.textContent = 'Error:\n' + JSON.stringify(json, null, 2);
+        }
+      });
+    }
 
     // ---- LOGIN ----
-    document.getElementById('form-login').addEventListener('submit', async (e) => {
-      e.preventDefault()
-      const data = Object.fromEntries(new FormData(e.target))
-      const res = await fetch('/login', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-      })
+    const formLogin = document.getElementById('form-login');
+    if (formLogin) {
+      formLogin.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = Object.fromEntries(new FormData(e.target));
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          credentials: 'same-origin', // importante para aceptar cookie
+          body: JSON.stringify(data)
+        });
 
-      if (res.ok) {
-        // si el login es exitoso, redirige automáticamente
-        window.location.href = '/protegido'
-      } else {
-        const text = await res.text()
-        resultado.textContent = 'Error de login:\n' + text
-      }
-    })
+        if (res.ok) {
+          // cookie ya fue seteada por la respuesta; redirigimos al protegido
+          window.location.href = '/protegido';
+        } else {
+          const text = await res.text();
+          resultado.textContent = 'Error de login:\n' + text;
+        }
+      });
+    }
+
+    // ---- IR A ZONA PROTEGIDA (cuando ya estás logueado) ----
+    const btnProtegido = document.getElementById('btn-protegido');
+    if (btnProtegido) {
+      btnProtegido.addEventListener('click', () => {
+        window.location.href = '/protegido';
+      });
+    }
+
+    // ---- CERRAR SESIÓN (desde / con sesión activa) ----
+    const btnCerrar = document.getElementById('btn-cerrar');
+    if (btnCerrar) {
+      btnCerrar.addEventListener('click', async () => {
+        const res = await fetch('/cerrar', {
+          method: 'POST',
+          credentials: 'same-origin'
+        });
+        if (res.ok) {
+          // al cerrar, volvemos a la página con login/registro
+          window.location.href = '/';
+        } else {
+          const json = await res.json();
+          resultado.textContent = 'Error al cerrar sesión:\n' + JSON.stringify(json, null, 2);
+        }
+      });
+    }
   </script>
 </body>
 </html>

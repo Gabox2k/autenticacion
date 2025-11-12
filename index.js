@@ -13,16 +13,22 @@ app.use(express.json())
 app.use(cookieParser())
 
 
+
 app.get('/', (req,res) => {
     const token = req.cookies.acceso_token
+    let username = null
 
-     try {
-        const data = jwt.verify(token, secret_jwt_key) 
-        res.render('index', data)
-    } catch (error) {
-        res.render('index')
-        
+    if (token){
+
+        try{
+            const decoded = jwt.verify(token, secret_jwt_key)
+            username = decoded.username
+        } catch (err) {
+            username = null 
+        }
     }
+
+    res.render('index', {username })
 })
 
 app.post('/login', async (req, res) => {
@@ -30,10 +36,27 @@ app.post('/login', async (req, res) => {
     
     try{
         const user = await UserRegistory.login({username, password})
-        res.send({user})
+        const token = jwt.sign({id: user.id, username: user.username}, secret_jwt_key , {
+            expiresIn : '1h'
+        }
+
+        )
+        res
+            .cookie('acceso_token' , token, {
+                httpOnl : true,
+                sameSite : 'lax'
+            })
+            .status(200)
+            .send({message: 'loguedo'})
     } catch(error){
         res.status(401).send(error.message)
     }
+})
+
+app.post('/cerrar', async (req, res) =>{
+    res
+        .clearCookie('acceso_token')
+        .json({message : 'Sesion cerrada'})
 })
 
 app.post('/registro', async (req, res) =>{
@@ -75,5 +98,5 @@ app.get('/protegido', (req, res) => {
 
 
 app.listen(PORT,() => {
-    console.log('Servidor escuchando en el puerto ${port}' )
+    console.log(`Servidor escuchando en el puerto ${PORT}`)
 } )
