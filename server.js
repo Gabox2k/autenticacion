@@ -14,6 +14,7 @@ app.use(express.json())
 app.use(cookieParser())
 
 
+//verificacion del administracion 
 function admin(req, res, next) {
     const token = req.cookies.acceso_token
     if(!token) return res.status(403).send("No estas autorizado")
@@ -30,6 +31,7 @@ function admin(req, res, next) {
 }
 
 
+//Obtencion del user y del rol
 app.get('/', (req,res) => {
     const token = req.cookies.acceso_token
     let username = null
@@ -51,6 +53,7 @@ app.get('/', (req,res) => {
 })
 
 
+//Validacion del token
 app.post('/login', async (req, res) => {
     const {username, password } = req.body
     
@@ -74,6 +77,7 @@ app.post('/login', async (req, res) => {
 })
 
 
+//Cierre de sesion 
 app.post('/cerrar', async (req, res) =>{
     res
         .clearCookie('acceso_token')
@@ -81,6 +85,7 @@ app.post('/cerrar', async (req, res) =>{
 })
 
 
+//Registra el nuevo usuario a la base de datos 
 app.post('/registro', async (req, res) =>{
     const {username, password} = req.body
     console.log(req.body)
@@ -103,6 +108,7 @@ app.post('/registro', async (req, res) =>{
 })
 
 
+//Mostrar el la pagina protegido
 app.get('/protegido', (req, res) => {
     const token = req.cookies.acceso_token
     if (!token){
@@ -119,6 +125,8 @@ app.get('/protegido', (req, res) => {
    
 })
 
+
+//Solo el administrador puede entrar 
 app.get("/admin", admin,  async (req, res) =>{
     try { 
         const users = UserRegistory.getAll()
@@ -130,12 +138,15 @@ app.get("/admin", admin,  async (req, res) =>{
    
 })
 
+
+//Verificacion del usuario
 app.get("/admin/usuarios", admin, (req, res) =>{
     const users = UserRegistory.getAll()
     res.json(users)
 } )
 
 
+//Dar el rol de usuarios a admin
 app.post('/admin/makeAdmin', admin, (req,res) =>{
     const {username, newrole } = req.body
 
@@ -147,6 +158,7 @@ app.post('/admin/makeAdmin', admin, (req,res) =>{
 })
 
 
+//Elimina al usuario 
 app.post('/admin/eliminar', admin, (req, res) => {
     const {username } = req.body
 
@@ -161,6 +173,8 @@ app.post('/admin/eliminar', admin, (req, res) => {
     res.send({message: "Usuario eliminado" })
 })
 
+
+//Crea un admin por defecto
 async function crearAdmin() {
     try{
         await UserRegistory.create({

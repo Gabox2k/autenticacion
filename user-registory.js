@@ -16,7 +16,8 @@ export class UserRegistory {
         //Usuario si ya existe
         const existir = db.prepare("SELECT * FROM usuario WHERE  username = ? ").get(username)
         if (existir) throw new Error('El usuario ya existe')
-
+        
+        //Creacion de id unico
         const id = crypto.randomUUID()
 
         //contraseña hasheada 
@@ -44,6 +45,7 @@ export class UserRegistory {
         const user = db.prepare("SELECT * FROM usuario WHERE username =?").get(username)
         if (!user) throw new Error ('usuario no existe')
         
+        //Comparacion de la contraseña
         const valido = await bcrypt.compare(password, user.password)
         if(!valido) throw new Error ('La contraseña es invalida')
         
