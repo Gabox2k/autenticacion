@@ -28,9 +28,7 @@
 
     <% if (role === "admin") { %>
       <h2>Panel de administración 👑</h2>
-
       <button id="btn-cargar-usuarios">Mostrar usuarios</button>
-
       <div id="lista-usuarios" style="margin-top: 20px;"></div>
     <% } %>
 
@@ -57,14 +55,14 @@
         });
         const json = await res.json();
         if (res.ok) {
-          window.location.href = '/protegido';
+          window.location.assign('/protegido');
         } else {
           resultado.textContent = 'Error:\n' + JSON.stringify(json, null, 2);
         }
       });
     }
 
-    // ===== LOGIN (CORREGIDO) =====
+    // ===== LOGIN =====
     const formLogin = document.getElementById('form-login');
     if (formLogin) {
       formLogin.addEventListener('submit', async (e) => {
@@ -82,9 +80,9 @@
 
         if (res.ok) {
           if (json.role === "admin") {
-            window.location.href = '/admin';
+            window.location.assign('/admin');
           } else {
-            window.location.href = '/protegido';
+            window.location.assign('/protegido');
           }
         } else {
           resultado.textContent = 'Error de login:\n' + JSON.stringify(json, null, 2);
@@ -96,7 +94,7 @@
     const btnProtegido = document.getElementById('btn-protegido');
     if (btnProtegido) {
       btnProtegido.addEventListener('click', () => {
-        window.location.href = '/protegido';
+        window.location.assign('/protegido');
       });
     }
 
@@ -109,7 +107,7 @@
           credentials: 'same-origin'
         });
         if (res.ok) {
-          window.location.href = '/';
+          window.location.assign('/');
         } else {
           const json = await res.json();
           resultado.textContent = 'Error al cerrar sesión:\n' + JSON.stringify(json, null, 2);
@@ -123,26 +121,19 @@
 
     if (btnCargar) {
       btnCargar.addEventListener("click", async () => {
-        const res = await fetch("/admin/usuarios", { credentials: "same-origin" });
-        const data = await res.json();
-
-        lista.innerHTML = data.map(u => `
-          <div style="margin-bottom:10px; border-bottom:1px solid #ccc; padding-bottom:5px;">
-            <b>${u.username}</b> — rol: ${u.role}
-            <button onclick="hacerAdmin('${u.username}')">Hacer admin</button>
-            <button onclick="eliminarUsuario('${u.username}')">Eliminar</button>
-          </div>
-        `).join("");
+        const res = await fetch("/admin", { credentials: "same-origin" });
+        const html = await res.text();
+        lista.innerHTML = html; // Renderiza la vista admin
       });
     }
 
     // ===== ADMIN: Hacer admin =====
     async function hacerAdmin(username) {
-      const res = await fetch("/admin/makeAdmin", {
+      const res = await fetch("/admin/role", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
-        body: JSON.stringify({ username })
+        body: JSON.stringify({ username, newrole: "admin" })
       });
       const txt = await res.text();
       alert(txt);
@@ -150,8 +141,8 @@
 
     // ===== ADMIN: Eliminar usuario =====
     async function eliminarUsuario(username) {
-      const res = await fetch("/admin/eliminar", {
-        method: "DELETE",
+      const res = await fetch("/admin/delete", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
         body: JSON.stringify({ username })

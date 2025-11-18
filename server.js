@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import cookieParser from 'cookie-parser'
 import {PORT, secret_jwt_key} from './config.js'
 import {  UserRegistory } from './user-registory.js'
+import db from './db.js'
 
 
 const app = express()
@@ -39,6 +40,7 @@ app.get('/', (req,res) => {
         try{
             const decoded = jwt.verify(token, secret_jwt_key)
             username = decoded.username
+            role = decoded.role
         } catch (err) {
             username = null 
             role = null
@@ -61,7 +63,7 @@ app.post('/login', async (req, res) => {
         )
         res
             .cookie('acceso_token' , token, {
-                httpOnl : true,
+                httpOnly : true,
                 sameSite : 'lax'
             })
             .status(200)
@@ -128,24 +130,34 @@ app.get("/admin", admin,  async (req, res) =>{
    
 })
 
+app.get("/admin/usuarios", admin, (req, res) =>{
+    const users = UserRegistory.getAll()
+    res.json(users)
+} )
 
-app.post('/admin/role', admin, (req,res) =>{
+
+app.post('/admin/makeAdmin', admin, (req,res) =>{
     const {username, newrole } = req.body
 
-    const user = UserRegistory.users.find(u => u.username == username)
+    const user = db.prepare("SELECT * FROM usuario WHERE username = ?").get(username)
     if (!user) return res.status(404).send("Usuario no encontrado")
     
-    user.role= newrole
+    db.prepare("UPDATE usuario SET role = ? WHERE username = ?").run(newrole, username)
     res.send({message : "rol actualizado"})
 })
 
-app.post('/admin/delete', admin, (req, res) => {
+
+app.post('/admin/eliminar', admin, (req, res) => {
     const {username } = req.body
 
-    const index = UserRegistory.users.findIndex(u => u.username == username)
-    if (index === -1) return res.status(404).send({message: "Usuario no encontrado"})
+    const resultado = db.prepare("SELECT * FROM usuario WHERE username = ?").get(username)
+    if(!resultado) {
+        return res.status(404).send({message: "Usuario no encontrado"})
+    }
+
+    db.prepare("DELETE FROM usuario WHERE username = ?").run(username)
     
-    UserRegistory.users.splice(index, 1)
+    
     res.send({message: "Usuario eliminado" })
 })
 

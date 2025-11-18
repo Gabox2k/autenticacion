@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel de Administración</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    .user-card {
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+    }
+    button {
+      margin-right: 10px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Panel de Administración 👑</h1>
+
+  <h2>Usuarios registrados</h2>
+
+  <div id="lista-usuarios">
+    <% users.forEach(u => { %>
+      <div class="user-card">
+        <b><%= u.username %></b> — Rol: <%= u.role %>
+
+        <% if (u.role !== "admin") { %>
+          <button onclick="hacerAdmin('<%= u.username %>')">Hacer admin</button>
+        <% } %>
+
+        <button onclick="eliminarUsuario('<%= u.username %>')">Eliminar</button>
+      </div>
+    <% }); %>
+  </div>
+
+  <a href="/">Volver al inicio</a>
+
+  <script>
+    async function hacerAdmin(username) {
+      const res = await fetch("/admin/makeAdmin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ username, newrole: "admin" })
+      });
+
+      const txt = await res.text();
+      alert(txt);
+      location.reload(); // refresca para ver el cambio
+    }
+
+    async function eliminarUsuario(username) {
+      const res = await fetch("/admin/eliminar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ username })
+      });
+
+      const txt = await res.text();
+      alert(txt);
+      location.reload(); // refresca lista
+    }
+  </script>
+
+</body>
+</html>
