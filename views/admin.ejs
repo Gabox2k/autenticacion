@@ -5,42 +5,93 @@
   <title>Panel de Administración</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-    h1 {
+
+    h1, h2 {
+      color: #333;
+      text-align: center;
+    }
+
+    #lista-usuarios {
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .user-card {
+      border-radius: 10px;
+      background: #fff;
+      padding: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .user-info {
+      font-weight: bold;
       color: #333;
     }
-    .user-card {
-      border: 1px solid #ccc;
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      background: #f9f9f9;
-    }
-    button {
-      margin-right: 10px;
+
+    .user-actions button {
+      margin-left: 5px;
       padding: 5px 10px;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .user-actions button:hover {
+      opacity: 0.8;
+    }
+
+    .make-admin {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .delete-user {
+      background-color: #f44336;
+      color: white;
+    }
+
+    a {
+      margin-top: 20px;
+      color: #333;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a:hover {
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
 
   <h1>Panel de Administración 👑</h1>
-
   <h2>Usuarios registrados</h2>
 
   <div id="lista-usuarios">
     <% users.forEach(u => { %>
       <div class="user-card">
-        <b><%= u.username %></b> — Rol: <%= u.role %>
-
-        <% if (u.role !== "admin") { %>
-          <button onclick="hacerAdmin('<%= u.username %>')">Hacer admin</button>
-        <% } %>
-
-        <button onclick="eliminarUsuario('<%= u.username %>')">Eliminar</button>
+        <span class="user-info"><%= u.username %> — Rol: <%= u.role %></span>
+        <span class="user-actions">
+          <% if (u.role !== "admin") { %>
+            <button class="make-admin" onclick="hacerAdmin('<%= u.username %>')">Hacer admin</button>
+          <% } %>
+          <button class="delete-user" onclick="eliminarUsuario('<%= u.username %>')">Eliminar</button>
+        </span>
       </div>
     <% }); %>
   </div>
@@ -48,7 +99,8 @@
   <a href="/">Volver al inicio</a>
 
   <script>
-    async function hacerAdmin(username) {
+    
+async function hacerAdmin(username) {
       const res = await fetch("/admin/makeAdmin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

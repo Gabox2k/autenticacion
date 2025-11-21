@@ -21,7 +21,7 @@ function admin(req, res, next) {
     
     try{
         const data = jwt.verify(token, secret_jwt_key)
-        if (data.role !== "admin") return res.status(403).send("Solo el admin")
+        if (data.role !== "admin") return res.status(403).send("Solo el admin")//verificacion del rol
         
         req.user = data
         next()
@@ -30,6 +30,34 @@ function admin(req, res, next) {
     }
 }
 
+
+function JWT(req, res, next) {
+    const header = req.headers.authorization
+
+    let token = null
+
+    if (header) {
+        token = header.split(" ")[1]
+    } else if (req.cookies && req.cookies.acceso_token) {
+        token = req.cookies.acceso_token
+    }
+
+    if(!token) return res.status(403).send("falta token")
+
+    try{
+        const data = jwt.verify(token, secret_jwt_key)
+        req.user= data
+        next()
+
+    } catch(err) {
+        res.status(403).send("Token invalido")
+    }
+}
+
+
+app.get('/login-jwt', (req,res) =>{
+    res.send("Inicio de sesion con JWT")
+})
 
 //Obtencion del user y del rol
 app.get('/', (req,res) => {
@@ -53,8 +81,8 @@ app.get('/', (req,res) => {
 })
 
 
-//Validacion del token
-app.post('/login', async (req, res) => {
+//Loguear con la cookie
+app.post('/login-cookie', async (req, res) => {
     const {username, password } = req.body
     
     try{
@@ -66,8 +94,8 @@ app.post('/login', async (req, res) => {
         )
         res
             .cookie('acceso_token' , token, {
-                httpOnly : true,
-                sameSite : 'lax'
+                httpOnly : true, //solo lee en el servidor
+                sameSite : 'lax' 
             })
             .status(200)
             .send({message: 'loguedo', role: user.role})
@@ -76,6 +104,39 @@ app.post('/login', async (req, res) => {
     }
 })
 
+//Validar con el jwt
+app.post('/login-jwt', async (req,res) =>{
+      const {username, password } = req.body
+    
+    try{
+        const user = await UserRegistory.login({username, password})
+        const token = jwt.sign({id: user.id, username: user.username, role: user.role}, secret_jwt_key , {
+            expiresIn : '1h'
+        })
+
+        // also set the token as a cookie so browser navigations can send it
+        res
+            .cookie('acceso_token', token, {
+                httpOnly: true,
+                sameSite: 'lax'
+            })
+            .status(200)
+            .send({
+                message: "Sesion iniciada con JWT",
+                token,
+                role: user.role
+            })
+
+    } catch (error){
+        res.status(401).send(error.message)
+    } 
+})
+
+
+app.get('/zona-jwt', JWT, (req,res) =>{
+    res.send("con jwt valido")
+
+})
 
 //Cierre de sesion 
 app.post('/cerrar', async (req, res) =>{
@@ -86,7 +147,7 @@ app.post('/cerrar', async (req, res) =>{
 
 
 //Registra el nuevo usuario a la base de datos 
-app.post('/registro', async (req, res) =>{
+app.post('/registro', async (req, res) =>{                   
     const {username, password} = req.body
     console.log(req.body)
 
@@ -133,7 +194,7 @@ app.get("/admin", admin,  async (req, res) =>{
         res.render('admin' , {users})
 
     } catch (err) {
-        res.status(500).send('error al obteenr los usuarios')
+        res.status(500).send('error al obtener los usuarios')
     }
    
 })

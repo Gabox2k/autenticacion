@@ -3,6 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <title>Autenticación con JWT</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      color: #333;
+      text-align: center;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      width: 300px;
+    }
+
+    input {
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 10px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #4CAF50;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #btn-cerrar {
+      background-color: #f44336;
+    }
+
+    #lista-usuarios, pre#resultado {
+      width: 300px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      margin-top: 20px;
+      white-space: pre-wrap;
+    }
+
+    .btn-container {
+      display: flex;
+      justify-content: space-between;
+      width: 300px;
+      margin-top: 20px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .btn-small {
+      flex: 1;
+      padding: 8px;
+      font-size: 13px;
+    }
+  </style>
 </head>
 <body>
 
@@ -20,7 +104,11 @@
     <form id="form-login">
       <input type="text" name="username" placeholder="Usuario" required>
       <input type="password" name="password" placeholder="Contraseña" required>
-      <button type="submit">Iniciar sesión</button>
+
+      <div class="btn-row">
+        <button type="button" id="btn-login-cookie" class="btn-small">Login con Cookie</button>
+        <button type="button" id="btn-login-jwt" class="btn-small">Login con JWT</button>
+      </div>
     </form>
 
   <% } else { %>
@@ -29,11 +117,13 @@
     <% if (role === "admin") { %>
       <h2>Panel de administración 👑</h2>
       <button id="btn-cargar-usuarios">Mostrar usuarios</button>
-      <div id="lista-usuarios" style="margin-top: 20px;"></div>
+      <div id="lista-usuarios"></div>
     <% } %>
 
-    <button id="btn-protegido">Ir a zona protegida</button>
-    <button id="btn-cerrar">Cerrar sesión</button>
+    <div class="btn-container">
+      <button id="btn-protegido">Ir a zona protegida</button>
+      <button id="btn-cerrar">Cerrar sesión</button>
+    </div>
   <% } %>
 
   <pre id="resultado"></pre>
@@ -62,14 +152,14 @@
       });
     }
 
-    // ===== LOGIN =====
-    const formLogin = document.getElementById('form-login');
-    if (formLogin) {
-      formLogin.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const data = Object.fromEntries(new FormData(e.target));
+    // ===== LOGIN CON COOKIE =====
+    const btnCookie = document.getElementById("btn-login-cookie");
+    if (btnCookie) {
+      btnCookie.addEventListener("click", async () => {
+        const form = document.getElementById("form-login");
+        const data = Object.fromEntries(new FormData(form));
 
-        const res = await fetch('/login', {
+        const res = await fetch('/login-cookie', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           credentials: 'same-origin',
@@ -77,15 +167,37 @@
         });
 
         const json = await res.json();
-
         if (res.ok) {
-          if (json.role === "admin") {
-            window.location.assign('/admin');
-          } else {
-            window.location.assign('/protegido');
-          }
+          if (json.role === "admin") window.location.assign('/admin');
+          else window.location.assign('/protegido');
         } else {
-          resultado.textContent = 'Error de login:\n' + JSON.stringify(json, null, 2);
+          resultado.textContent = 'Error:\n' + JSON.stringify(json, null, 2);
+        }
+      });
+    }
+
+    // ===== LOGIN CON JWT =====
+    const btnJWT = document.getElementById("btn-login-jwt");
+    if (btnJWT) {
+      btnJWT.addEventListener("click", async () => {
+        const form = document.getElementById("form-login");
+        const data = Object.fromEntries(new FormData(form));
+
+        const res = await fetch('/login-jwt', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+
+        const json = await res.json();
+        if (res.ok) {
+          // guardar token en localStorage
+          localStorage.setItem("token", json.token);
+
+          // redirigir a la zona protegida de JWT
+          window.location.assign('/zona-jwt');
+        } else {
+          resultado.textContent = 'Error:\n' + JSON.stringify(json, null, 2);
         }
       });
     }
@@ -102,6 +214,7 @@
     const btnCerrar = document.getElementById('btn-cerrar');
     if (btnCerrar) {
       btnCerrar.addEventListener('click', async () => {
+        localStorage.removeItem("token");
         const res = await fetch('/cerrar', {
           method: 'POST',
           credentials: 'same-origin'
@@ -113,42 +226,6 @@
           resultado.textContent = 'Error al cerrar sesión:\n' + JSON.stringify(json, null, 2);
         }
       });
-    }
-
-    // ===== ADMIN: Cargar usuarios =====
-    const lista = document.getElementById("lista-usuarios");
-    const btnCargar = document.getElementById("btn-cargar-usuarios");
-
-    if (btnCargar) {
-      btnCargar.addEventListener("click", async () => {
-        const res = await fetch("/admin", { credentials: "same-origin" });
-        const html = await res.text();
-        lista.innerHTML = html; // Renderiza la vista admin
-      });
-    }
-
-    // ===== ADMIN: Hacer admin =====
-    async function hacerAdmin(username) {
-      const res = await fetch("/admin/role", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ username, newrole: "admin" })
-      });
-      const txt = await res.text();
-      alert(txt);
-    }
-
-    // ===== ADMIN: Eliminar usuario =====
-    async function eliminarUsuario(username) {
-      const res = await fetch("/admin/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({ username })
-      });
-      const txt = await res.text();
-      alert(txt);
     }
   </script>
 </body>
