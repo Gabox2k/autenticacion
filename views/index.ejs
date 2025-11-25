@@ -186,6 +186,7 @@
         const res = await fetch('/login-jwt', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
+          credentials: 'same-origin',
           body: JSON.stringify(data)
         });
 
@@ -194,8 +195,12 @@
           // guardar token en localStorage
           localStorage.setItem("token", json.token);
 
-          // redirigir a la zona protegida de JWT
-          window.location.assign('/zona-jwt');
+          // redirigir según el rol (si es admin -> /admin, sino -> /zona-jwt)
+          if (json.role === "admin") {
+            window.location.assign('/admin');
+          } else {
+            window.location.assign('/zona-jwt');
+          }
         } else {
           resultado.textContent = 'Error:\n' + JSON.stringify(json, null, 2);
         }

@@ -16,13 +16,23 @@ app.use(cookieParser())
 
 //verificacion del administracion 
 function admin(req, res, next) {
-    const token = req.cookies.acceso_token
-    if(!token) return res.status(403).send("No estas autorizado")
-    
+    const header = req.headers.authorization
+
+    let token = null
+
+    //Token o cookies
+    if (header) {
+        token = header.split(" ")[1]
+    } else if (req.cookies && req.cookies.acceso_token) {
+        token = req.cookies.acceso_token
+    }
+
+    if (!token) return res.status(403).send("No estas autorizado")
+
     try{
         const data = jwt.verify(token, secret_jwt_key)
-        if (data.role !== "admin") return res.status(403).send("Solo el admin")//verificacion del rol
-        
+        if (data.role !== "admin") return res.status(403).send("Solo el admin")
+
         req.user = data
         next()
     } catch (e) {
@@ -31,11 +41,13 @@ function admin(req, res, next) {
 }
 
 
+//Verificacion si esta logueado 
 function JWT(req, res, next) {
     const header = req.headers.authorization
 
     let token = null
 
+    //Token o cookies 
     if (header) {
         token = header.split(" ")[1]
     } else if (req.cookies && req.cookies.acceso_token) {
@@ -54,10 +66,11 @@ function JWT(req, res, next) {
     }
 }
 
-
+//Pagina de login 
 app.get('/login-jwt', (req,res) =>{
     res.send("Inicio de sesion con JWT")
 })
+
 
 //Obtencion del user y del rol
 app.get('/', (req,res) => {
@@ -114,7 +127,6 @@ app.post('/login-jwt', async (req,res) =>{
             expiresIn : '1h'
         })
 
-        // also set the token as a cookie so browser navigations can send it
         res
             .cookie('acceso_token', token, {
                 httpOnly: true,
@@ -134,7 +146,7 @@ app.post('/login-jwt', async (req,res) =>{
 
 
 app.get('/zona-jwt', JWT, (req,res) =>{
-    res.send("con jwt valido")
+    res.send("inicio de sesion con JWT")
 
 })
 
