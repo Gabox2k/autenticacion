@@ -150,6 +150,7 @@ app.get('/zona-jwt', JWT, (req,res) =>{
 
 })
 
+
 //Cierre de sesion 
 app.post('/cerrar', async (req, res) =>{
     res
